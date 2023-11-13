@@ -11,9 +11,7 @@ const secretKey = crypto.randomBytes(32).toString('hex');
 app.use(bodyParser.json());
 
 
-// IMPLEMENTA LA LOGICA PARA GESITONAR PERSONAS Y EMPRESAS AQUÍ
-// ---------------------------------------------------------------------------------------------
-// Arrays para almacenar datos en memoria
+
 const personas = [];
 const empresas = [];
 
@@ -219,6 +217,8 @@ agregarEmpresa(nuevaEmpresa);
 console.log(obtenerTodasLasPersonas());
 console.log(obtenerTodasLasEmpresas());
 
+
+/*
 const idPersonaAEliminar = 1;
 if (eliminarPersona(idPersonaAEliminar)) {
     console.log(`Persona con ID ${idPersonaAEliminar} eliminada correctamente`);
@@ -235,7 +235,7 @@ if (eliminarEmpresa(idEmpresaAEliminar)) {
 
 console.log(obtenerTodasLasPersonas());
 console.log(obtenerTodasLasEmpresas());
-
+*/
 
 
 // ---------------------------------------------------------------------------------------------
