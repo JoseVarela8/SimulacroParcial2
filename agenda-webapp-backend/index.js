@@ -17,6 +17,22 @@ const empresas = [];
 
 const usuarios = [];
 
+// ---------------------------------------------------------------------------------------------
+// MIDDLEWARE DE AUTENTICACIÓN
+// ---------------------------------------------------------------------------------------------
+const authenticate = (req, res, next) => {
+    const token = req.header('Authorization');
+    if (!token) return res.status(401).json({ message: 'Acceso no autorizado' });
+
+    try {
+        const decoded = jwt.verify(token, secretKey);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(401).json({ message: 'Token inválido' });
+    }
+};
+
 
 // ---------------------------------------------------------------------------------------------
 // USUARIOS
@@ -75,7 +91,7 @@ function agregarPersona(nuevaPersona) {
     personas.push(nuevaPersona);
 }
 // Agregar una persona
-app.post('/api/personas', (req, res) => {
+app.post('/api/personas', authenticate, (req, res) => {
     const nuevaPersona = req.body; // Se espera que la solicitud incluya los datos de la persona en el cuerpo (body)
     agregarPersona(nuevaPersona);
     res.json({ message: 'Persona agregada correctamente' });
@@ -91,7 +107,7 @@ function eliminarPersona(idPersona) {
     return false; // La persona no fue encontrada
 }
 // Eliminar una persona por su ID
-app.delete('/api/personas/:id', (req, res) => {
+app.delete('/api/personas/:id', authenticate, (req, res) => {
     const idPersonaAEliminar = parseInt(req.params.id);
     const eliminacionExitosa = eliminarPersona(idPersonaAEliminar);
     if (eliminacionExitosa) {
@@ -106,13 +122,13 @@ function obtenerTodasLasPersonas() {
     return personas;
 }
 // Obtener todas las personas
-app.get('/api/personas', (req, res) => {
+app.get('/api/personas', authenticate, (req, res) => {
     const todasLasPersonas = obtenerTodasLasPersonas();
     res.json(todasLasPersonas);
 });
 
 // Ver los datos de una persona por su ID
-app.get('/api/personas/:id', (req, res) => {
+app.get('/api/personas/:id', authenticate, (req, res) => {
     const idPersona = parseInt(req.params.id);
     const personaEncontrada = personas.find(persona => persona.id === idPersona);
     if (personaEncontrada) {
@@ -132,7 +148,7 @@ function agregarEmpresa(nuevaEmpresa) {
     empresas.push(nuevaEmpresa);
 }
 // Agregar una empresa
-app.post('/api/empresas', (req, res) => {
+app.post('/api/empresas', authenticate, (req, res) => {
     const nuevaEmpresa = req.body; // Se espera que la solicitud incluya los datos de la empresa en el cuerpo (body)
     agregarEmpresa(nuevaEmpresa);
     res.json({ message: 'Empresa agregada correctamente' });
@@ -143,19 +159,30 @@ app.post('/api/empresas', (req, res) => {
 function eliminarEmpresa(idEmpresa) {
     const indice = empresas.findIndex(empresa => empresa.id === idEmpresa);
     if (indice !== -1) {
-        empresas.splice(indice, 1);
-        return true; // Éxito al eliminar
+        const empresa = empresas[indice];
+        const personaEncontrada = personas.find(persona => persona.empresa === empresa);
+        if (personaEncontrada){
+            empresas.splice(indice, 1);
+            return 1; // Éxito al eliminar
+        } else {
+            return 2; //la empresa tiene personas
+        }
     }
-    return false; // La empresa no fue encontrada
+    return 3; // La empresa no fue encontrada
 }
+
 // Eliminar una empresa por su ID
-app.delete('/api/empresas/:id', (req, res) => {
+app.delete('/api/empresas/:id', authenticate, (req, res) => {
     const idEmpresaAEliminar = parseInt(req.params.id);
     const eliminacionExitosa = eliminarEmpresa(idEmpresaAEliminar);
-    if (eliminacionExitosa) {
+    if (eliminacionExitosa==3) {
         res.json({ message: `Empresa con ID ${idEmpresaAEliminar} eliminada correctamente` });
     } else {
-        res.status(404).json({ message: `No se encontró la empresa con ID ${idEmpresaAEliminar}` });
+        if (eliminacionExitosa == 2){
+            res.status(404).json({ message: `La empresa con ID ${idEmpresaAEliminar} tiene personas todavia` });
+        } else {
+            res.status(404).json({ message: `No se encontró la empresa con ID ${idEmpresaAEliminar}` }); 
+        } 
     }
 });
 
@@ -164,13 +191,13 @@ function obtenerTodasLasEmpresas() {
     return empresas;
 }
 // Obtener todas las empresas
-app.get('/api/empresas', (req, res) => {
+app.get('/api/empresas', authenticate, (req, res) => {
     const todasLasEmpresas = obtenerTodasLasEmpresas();
     res.json(todasLasEmpresas);
 });
 
 // Ver los datos de una empresa por su ID
-app.get('/api/empresas/:id', (req, res) => {
+app.get('/api/empresas/:id', authenticate,(req, res) => {
     const idEmpresa = parseInt(req.params.id);
     const empresaEncontrada = empresas.find(empresa => empresa.id === idEmpresa);
     if (empresaEncontrada) {
@@ -239,22 +266,6 @@ console.log(obtenerTodasLasEmpresas());
 
 
 // ---------------------------------------------------------------------------------------------
-
-
-
-// MIDDLEWARE DE AUTENTICACIÓN
-const authenticate = (req, res, next) => {
-    const token = req.header('Authorization');
-    if (!token) return res.status(401).json({ message: 'Acceso no autorizado' });
-
-    try {
-        const decoded = jwt.verify(token, secretKey);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        res.status(401).json({ message: 'Token inválido' });
-    }
-};
 
 // RUTAS PROTEGIDAS
 app.use('/api', authenticate);
